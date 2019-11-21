@@ -69,7 +69,7 @@ server <- function(input, output) {
     })
 
     output$mua <- renderText({
-        if(is.na(overlay()$rural_status)) {
+        if(overlay()$rural_status == 'Not applicable') {
             "Medically Underserved Area: No"
         }
         else "Medically Underserved Area: Yes"
