@@ -1,5 +1,7 @@
 # mua_app
 
+Hosted at https://erikarasnick.shinyapps.io/mua_app/
+
 Reports if a lat/lon coordinate is in a medically underserved area, as defined by the [Health Resources & Services Administration](https://data.hrsa.gov/data/download). If in an underserved area, it also reports if the area is considered rural.
 
 Examples:
