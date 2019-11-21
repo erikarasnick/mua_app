@@ -65,18 +65,18 @@ server <- function(input, output) {
     overlay <- reactive({
         x <- st_join(coords_pt(), mua_crop(), left = FALSE, largest=TRUE)
         if (nrow(x) > 0) {return(x)}
-        else return(data.frame(RurStatDes = NA))
+        else return(data.frame(rural_status = 'Not applicable'))
     })
 
     output$mua <- renderText({
-        if(is.na(overlay()$RurStatDes)) {
-            "Medically Underserved Area: No."
+        if(is.na(overlay()$rural_status)) {
+            "Medically Underserved Area: No"
         }
         else "Medically Underserved Area: Yes"
     })
     
     output$rural <- renderText({
-        paste0("Rural Status: ", as.character(overlay()$RurStatDes))
+        paste0("Rural Status: ", as.character(overlay()$rural_status))
     })
     
     output$map <- leaflet::renderLeaflet({
