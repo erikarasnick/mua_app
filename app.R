@@ -14,7 +14,7 @@ ui <- fluidPage(
     titlePanel("Medically Underserved Area Locator"),
 
 
-    # Sidebar with a text input 
+    # Sidebar with a text input
     sidebarLayout(
         sidebarPanel(
             h4("First geocode the address to obtain the latitude and longitude."),
@@ -29,7 +29,7 @@ ui <- fluidPage(
             numericInput("lon", label = h3("Longitude"), value = "Enter text..."),
             actionButton("button", "Search"),
             br(),
-            
+
             conditionalPanel(condition = "output.rural",
                              br(),
                              h4(textOutput("mua", inline = TRUE)),
@@ -48,20 +48,20 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-    
+
     coords_pt <- eventReactive(input$button, {
-        data.frame(lat = input$lat, lon = input$lon, 
-                   sf_lat = input$lat, sf_lon = input$lon) %>% 
-            st_as_sf(coords = c('sf_lon', 'sf_lat'), crs = 4326) %>% 
-            st_transform(st_crs(mua)) %>% 
+        data.frame(lat = input$lat, lon = input$lon,
+                   sf_lat = input$lat, sf_lon = input$lon) %>%
+            st_as_sf(coords = c('sf_lon', 'sf_lat'), crs = 4326) %>%
+            st_transform(st_crs(mua)) %>%
             mutate(label = 'my point')
     })
-    
+
     mua_crop <- reactive({
         buffer <- st_buffer(coords_pt(), dist = 241402, nQuadSegs = 1000)
         st_intersection(mua, buffer)
     })
-    
+
     overlay <- reactive({
         x <- st_join(coords_pt(), mua_crop(), left = FALSE, largest=TRUE)
         if (nrow(x) > 0) {return(x)}
@@ -74,18 +74,18 @@ server <- function(input, output) {
         }
         else "Medically Underserved Area: Yes"
     })
-    
+
     output$rural <- renderText({
         paste0("Rural Status: ", as.character(overlay()$rural_status))
     })
-    
+
     output$map <- leaflet::renderLeaflet({
         tm <- tm_basemap("CartoDB.Positron") +
-            tm_shape(mua_crop()) + 
+            tm_shape(mua_crop()) +
             tm_polygons(col = "#80b1d3",
-                        alpha = 0.7, 
+                        alpha = 0.7,
                         id = 'MuaSvcArNM') +
-            tm_shape(coords_pt(), 
+            tm_shape(coords_pt(),
                      is.master = TRUE) +
             tm_dots(col = "#fb8072",
                     id = 'label',
@@ -93,9 +93,9 @@ server <- function(input, output) {
             tm_view(set.view = 10)
         tmap_leaflet(tm)
     })
-    
+
     outputOptions(output, "rural", suspendWhenHidden = FALSE)
 }
 
-# Run the application 
+# Run the application
 shinyApp(ui = ui, server = server)
