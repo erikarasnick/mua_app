@@ -18,7 +18,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             h4("First geocode the address to obtain the latitude and longitude."),
-            a("Click here to use the online geocoder provided by Texas A&M.", href="http://geoservices.tamu.edu/Services/Geocode/Interactive/"),
+          a("Click here to use the online geocoder provided by Texas A&M.", href="http://geoservices.tamu.edu/Services/Geocode/Interactive/", target = "_blank"),
             br(),
             h4("Then copy and paste the latitude and longitude below."),
             # textInput("street", label = h3("Street Address"), value = "Enter text..."),
