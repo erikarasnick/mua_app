@@ -5,7 +5,14 @@ library(sf)
 library(tmap)
 tmap_mode('view')
 
-mua <- readRDS("mua_shp_5072.rds")
+mua_shp <- readRDS("mua_shp_5072.rds")
+rural_shp <- readRDS("rural_shp_5072.rds")
+
+overlay_fn <- function(coords, shp){
+    x <- st_join(coords, shp, left = FALSE, largest=TRUE)
+    if (nrow(x) > 0) {return(x)}
+    else return(NULL)
+}
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -53,41 +60,40 @@ server <- function(input, output) {
         data.frame(lat = input$lat, lon = input$lon,
                    sf_lat = input$lat, sf_lon = input$lon) %>%
             st_as_sf(coords = c('sf_lon', 'sf_lat'), crs = 4326) %>%
-            st_transform(st_crs(mua)) %>%
+            st_transform(5072) %>%
             mutate(label = 'my point')
     })
-
-    mua_crop <- reactive({
-        buffer <- st_buffer(coords_pt(), dist = 241402, nQuadSegs = 1000)
-        st_intersection(mua, buffer)
-    })
-
-    overlay <- reactive({
-        x <- st_join(coords_pt(), mua_crop(), left = FALSE, largest=TRUE)
-        if (nrow(x) > 0) {return(x)}
-        else return(data.frame(rural_status = 'Not applicable'))
-    })
-
+    
+    crop_buffer <- reactive({ st_buffer(coords_pt(), dist = 241402, nQuadSegs = 1000) })
+    mua_crop <- reactive({ suppressWarnings(st_intersection(mua_shp, crop_buffer())) })
+    rural_crop <- reactive({ suppressWarnings(st_intersection(rural_shp, crop_buffer())) })
+    overlay_mua <- reactive({ overlay_fn(coords_pt(), mua_crop()) })
+    overlay_rural <- reactive({ overlay_fn(coords_pt(), rural_crop()) })
+    
     output$mua <- renderText({
-        if(overlay()$rural_status == 'Not applicable') {
+        if(is.null(overlay_mua())) {
             "Medically Underserved Area: No"
-        }
-        else "Medically Underserved Area: Yes"
+        } else "Medically Underserved Area: Yes"
     })
-
+    
     output$rural <- renderText({
-        paste0("Rural Status: ", as.character(overlay()$rural_status))
+        if(is.null(overlay_rural())) {
+            "Rural Health Area: No"
+        } else "Rural Health Area: Yes"
     })
 
     output$map <- leaflet::renderLeaflet({
         tm <- tm_basemap("CartoDB.Positron") +
-            tm_shape(mua_crop()) +
-            tm_polygons(col = "#80b1d3",
-                        alpha = 0.7,
-                        id = 'MuaSvcArNM') +
+            tm_shape(mua_crop(), name = "Medically Underserved Areas") +
+            tm_polygons(col = "#fdbb84",
+                        alpha = 0.7) +
+            tm_shape(rural_crop(), name = "Rural Health Areas") +
+            tm_polygons(col = "#a1d99b",
+                        alpha = 0.7) +
             tm_shape(coords_pt(),
-                     is.master = TRUE) +
-            tm_dots(col = "#fb8072",
+                     is.master = TRUE, 
+                     name = "Point") +
+            tm_dots(col = "#000000",
                     id = 'label',
                     size = 0.1) +
             tm_view(set.view = 10)
